@@ -1,17 +1,27 @@
 package com.villa_agency.user;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SourceType;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.villa_agency.role.Role;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "users")
@@ -21,27 +31,40 @@ public class User {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	@NotBlank
+	@Size(max = 20)
 	private String username;
 
+	@NotBlank
+	@Size(max = 50)
+	@Email
+	private String email;
+
+	@NotBlank
+	@Size(max = 120)
 	private String password;
 
-	private String email;
+	// private String role = "ROLE_CUSTOMER";
 
 	@CreationTimestamp(source = SourceType.DB)
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	private LocalDateTime createdDate;
 
+	@ManyToMany(fetch = FetchType.LAZY)
+	@JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
+	private Set<Role> roles = new HashSet<>();
+
 	public User() {
 		super();
 	}
 
-	public User(Long id, String username, String password, String email) {
+	public User(String username, String email, String password) {
 		super();
-		this.id = id;
 		this.username = username;
-		this.password = password;
 		this.email = email;
+		this.password = password;
 	}
+
 
 	public Long getId() {
 		return id;
@@ -59,6 +82,14 @@ public class User {
 		this.username = username;
 	}
 
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
 	public String getPassword() {
 		return password;
 	}
@@ -67,12 +98,22 @@ public class User {
 		this.password = password;
 	}
 
-	public String getEmail() {
-		return email;
+	public LocalDateTime getCreatedDate() {
+		return createdDate;
 	}
 
-	public void setEmail(String email) {
-		this.email = email;
+	public Set<Role> getRoles() {
+		return roles;
+	}
+
+	public void setRoles(Set<Role> roles) {
+		this.roles = roles;
+	}
+
+	@Override
+	public String toString() {
+		return "User [id=" + id + ", username=" + username + ", email=" + email + ", password=" + password
+				+ ", createdDate=" + createdDate + ", roles=" + roles + "]";
 	}
 
 }
