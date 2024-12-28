@@ -23,4 +23,9 @@ public class PropertyServiceImpl implements PropertyService {
 		return propertyRepo.findAll();
 	}
 
+	@Override
+	public void createProperty(Property property) {
+		propertyRepo.save(property);
+	}
+
 }
