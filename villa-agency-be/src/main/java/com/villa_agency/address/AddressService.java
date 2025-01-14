@@ -7,4 +7,8 @@ public interface AddressService {
 	List<Address> getAddresses();
 
 	void createAddress(Address address);
+
+	void updateAddressById(Long id, Address address);
+
+	void deleteAddress(Long id);
 }
