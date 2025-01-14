@@ -8,14 +8,13 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.villa_agency.response.GenericResponse;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:3000")
-@RequestMapping("/enquiries")
+// @RequestMapping("/enquiries")
 public class EnquiryController {
 
 	private EnquiryService enquiryService;
@@ -25,7 +24,7 @@ public class EnquiryController {
 		this.enquiryService = enquiryService;
 	}
 
-	@GetMapping
+	@GetMapping(path = "/admin/enquiries")
 	public GenericResponse<List<Enquiry>> getEnquiries() {
 		List<Enquiry> enquiries = enquiryService.getEnquiries();
 
@@ -33,7 +32,7 @@ public class EnquiryController {
 	}
 
 	// @CrossOrigin(origins = "http://localhost:3000")
-	@PostMapping(consumes = "application/json")
+	@PostMapping(consumes = "application/json", path = "/enquiries")
 	public ResponseEntity<String> createEnquiry(@RequestBody Enquiry enquiry) {
 		enquiryService.createEnquiry(enquiry);
 
