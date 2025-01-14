@@ -58,4 +58,16 @@ public class UserServiceImpl implements UserService {
 		return userDto;
 	}
 
+	@Override
+	public UserDto getUserByEmail(String email) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public UserDto findUserProfileByJwt(String jwt) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

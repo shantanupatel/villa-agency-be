@@ -9,4 +9,8 @@ public interface UserService {
 	void createUser(User user);
 
 	UserDto getUserById(Long id);
+
+	UserDto getUserByEmail(String email);
+
+	UserDto findUserProfileByJwt(String jwt);
 }
