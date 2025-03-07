@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,5 +35,17 @@ public class PropertyController {
 		propertyService.createProperty(property);
 
 		return new GenericResponse<>(HttpStatus.CREATED.value(), "New property created successfully", null);
+	}
+
+	@GetMapping(path = "/all/properties/{propertyId}")
+	public GenericResponse<Property> findPropertyById(@PathVariable long propertyId) {
+		Property foundProperty = propertyService.findPropertyById(propertyId);
+
+		if (foundProperty != null) {
+			return new GenericResponse<>(HttpStatus.OK.value(), "Property details", foundProperty);
+		}
+
+		return new GenericResponse<>(HttpStatus.NOT_FOUND.value(), "Property with id" + propertyId + " not found.", null);
+
 	}
 }

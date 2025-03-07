@@ -7,4 +7,6 @@ public interface PropertyService {
 	List<Property> getAllProperties();
 
 	void createProperty(Property property);
+
+	Property findPropertyById(long propertyId);
 }
