@@ -18,14 +18,19 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.villa_agency.exception.TokenRefreshException;
 import com.villa_agency.payload.request.LoginRequest;
 import com.villa_agency.payload.request.SignupRequest;
+import com.villa_agency.payload.request.TokenRefreshRequest;
 import com.villa_agency.payload.response.JwtResponse;
+import com.villa_agency.payload.response.TokenRefreshResponse;
 import com.villa_agency.response.GenericResponse;
 import com.villa_agency.role.ERole;
 import com.villa_agency.role.Role;
 import com.villa_agency.role.RoleRepository;
 import com.villa_agency.security.jwt.JwtUtils;
+import com.villa_agency.security.refreshtoken.RefreshToken;
+import com.villa_agency.security.refreshtoken.RefreshTokenService;
 import com.villa_agency.security.services.UserDetailsImpl;
 import com.villa_agency.user.User;
 import com.villa_agency.user.UserRepository;
@@ -52,8 +57,27 @@ public class AuthController {
 	@Autowired
   JwtUtils jwtUtils;
 
+	RefreshTokenService refreshTokenService;
+
+	public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository,
+			RoleRepository roleRepository, PasswordEncoder encoder, JwtUtils jwtUtils,
+			RefreshTokenService refreshTokenService) {
+		super();
+		this.authenticationManager = authenticationManager;
+		this.userRepository = userRepository;
+		this.roleRepository = roleRepository;
+		this.encoder = encoder;
+		this.jwtUtils = jwtUtils;
+		this.refreshTokenService = refreshTokenService;
+	}
+
+	// public PropertyController(PropertyService propertyService) {
+	// super();
+	// this.propertyService = propertyService;
+	// }
+
 	@PostMapping("/signin")
-	public GenericResponse<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+	public GenericResponse<JwtResponse> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
 		Authentication authentication = authenticationManager
 				.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
 
@@ -62,10 +86,11 @@ public class AuthController {
 		}
 
 		SecurityContextHolder.getContext().setAuthentication(authentication);
-		String jwt = jwtUtils.generateJwtToken(authentication);
-
 
 		UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+
+		String jwt = jwtUtils.generateJwtToken(userDetails);
+
 		List<String> roles = userDetails.getAuthorities().stream().map(item -> item.getAuthority())
 				.collect(Collectors.toList());
 
@@ -73,8 +98,14 @@ public class AuthController {
 		// .ok(new JwtResponse(jwt, userDetails.getId(), userDetails.getUsername(),
 		// userDetails.getEmail(), roles));
 
-		return new GenericResponse<>(HttpStatus.OK.value(), "Login successful",
-				new JwtResponse(jwt, userDetails.getId(), userDetails.getUsername(), userDetails.getEmail(), roles));
+		// return new GenericResponse<>(HttpStatus.OK.value(), "Login successful",
+		// new JwtResponse(jwt, userDetails.getId(), userDetails.getUsername(),
+		// userDetails.getEmail(), roles));
+
+		RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
+
+		return new GenericResponse<JwtResponse>(HttpStatus.OK.value(), "Login successful", new JwtResponse(jwt,
+				refreshToken.getToken(), userDetails.getId(), userDetails.getUsername(), userDetails.getEmail(), roles));
 
 	}
 
@@ -135,5 +166,17 @@ public class AuthController {
 		// successfully!"));
 
 		return new GenericResponse<>(HttpStatus.CREATED.value(), "User registered successfully!", null);
+	}
+
+	@PostMapping("/refreshtoken")
+	public GenericResponse<?> refreshToken(@Valid @RequestBody TokenRefreshRequest request) {
+		String requestRefreshToken = request.getRefreshToken();
+
+		return refreshTokenService.findByToken(requestRefreshToken).map(refreshTokenService::verifyExpiration).map(RefreshToken::getUser).map(user -> {
+			String token = jwtUtils.generateTokenFromUsername(user.getUsername());
+
+			return new GenericResponse<>(HttpStatus.OK.value(), "Refresh token generated",
+					new TokenRefreshResponse(token, requestRefreshToken));
+		}).orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Refresh token is not in database!"));
 	}
 }

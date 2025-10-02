@@ -9,7 +9,6 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -64,11 +63,14 @@ public class WebSecurityConfig {
 	@Bean
 	SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		http.csrf(csrf -> csrf.disable())
-				.exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
-				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				// .exceptionHandling(exception ->
+				// exception.authenticationEntryPoint(unauthorizedHandler))
+				// .sessionManagement(session ->
+				// session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth.requestMatchers("/auth/**").permitAll().requestMatchers("/all/**")
 						.permitAll().requestMatchers("/test/**")
-						.permitAll().requestMatchers("/all/**").permitAll().anyRequest().authenticated());
+						.permitAll().requestMatchers("/all/**").permitAll().anyRequest()
+						.authenticated());
 
 		http.authenticationProvider(authenticationProvider());
 
@@ -85,6 +87,18 @@ public class WebSecurityConfig {
 
 		return http.build();
 	}
+
+	// @Bean()
+	// SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws
+	// Exception {
+	// httpSecurity.csrf(csrf -> csrf.disable())
+	// .authorizeHttpRequests(auth ->
+	// auth.requestMatchers("/home").permitAll().requestMatchers("/user/**")
+	// .hasAuthority("USER").requestMatchers("/admin/**").hasRole("ADMIN").anyRequest().authenticated());
+	//
+	// return
+	// httpSecurity.formLogin(AbstractAuthenticationFilterConfigurer::permitAll).build();
+	// }
 
 	// Bean to configure CORS settings
 	@Bean
