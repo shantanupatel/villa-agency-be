@@ -32,7 +32,7 @@ public class EnquiryController {
 	}
 
 	// @CrossOrigin(origins = "http://localhost:3000")
-	@PostMapping(consumes = "application/json", path = "/enquiries")
+	@PostMapping(consumes = "application/json", path = "/all/enquiries")
 	public ResponseEntity<String> createEnquiry(@RequestBody Enquiry enquiry) {
 		enquiryService.createEnquiry(enquiry);
 
