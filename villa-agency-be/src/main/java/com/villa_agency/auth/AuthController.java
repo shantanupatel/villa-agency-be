@@ -2,15 +2,16 @@ package com.villa_agency.auth;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,6 +31,7 @@ import com.villa_agency.role.Role;
 import com.villa_agency.role.RoleRepository;
 import com.villa_agency.security.jwt.JwtUtils;
 import com.villa_agency.security.refreshtoken.RefreshToken;
+import com.villa_agency.security.refreshtoken.RefreshTokenRepository;
 import com.villa_agency.security.refreshtoken.RefreshTokenService;
 import com.villa_agency.security.services.UserDetailsImpl;
 import com.villa_agency.user.User;
@@ -42,26 +44,23 @@ import jakarta.validation.Valid;
 @RequestMapping("/auth")
 public class AuthController {
 
-	@Autowired
 	AuthenticationManager authenticationManager;
 
-	@Autowired
   UserRepository userRepository;
 
-	@Autowired
   RoleRepository roleRepository;
 
-	@Autowired
   PasswordEncoder encoder;
 
-	@Autowired
   JwtUtils jwtUtils;
 
 	RefreshTokenService refreshTokenService;
 
+	RefreshTokenRepository refreshTokenRepository;
+
 	public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository,
 			RoleRepository roleRepository, PasswordEncoder encoder, JwtUtils jwtUtils,
-			RefreshTokenService refreshTokenService) {
+			RefreshTokenService refreshTokenService, RefreshTokenRepository refreshTokenRepository) {
 		super();
 		this.authenticationManager = authenticationManager;
 		this.userRepository = userRepository;
@@ -69,6 +68,7 @@ public class AuthController {
 		this.encoder = encoder;
 		this.jwtUtils = jwtUtils;
 		this.refreshTokenService = refreshTokenService;
+		this.refreshTokenRepository = refreshTokenRepository;
 	}
 
 	// public PropertyController(PropertyService propertyService) {
@@ -78,6 +78,8 @@ public class AuthController {
 
 	@PostMapping("/signin")
 	public GenericResponse<JwtResponse> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+		System.out.println(loginRequest);
+
 		Authentication authentication = authenticationManager
 				.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
 
@@ -102,10 +104,43 @@ public class AuthController {
 		// new JwtResponse(jwt, userDetails.getId(), userDetails.getUsername(),
 		// userDetails.getEmail(), roles));
 
-		RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
+		User user = userRepository.findByUsername(loginRequest.getUsername())
+				.orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+		// Check if a refresh token already exists for the user
+		// Optional<RefreshToken> existingRefreshToken =
+		// refreshTokenRepository.findByUser(user);
+
+		Optional<RefreshToken> existingRefreshToken = refreshTokenService.findByUser(user);
+
+		// RefreshToken refreshToken =
+		// refreshTokenService.createRefreshToken(userDetails.getId());
+
+		// return new GenericResponse<JwtResponse>(HttpStatus.OK.value(), "Login
+		// successful", new JwtResponse(jwt,
+		// refreshToken.getToken(), userDetails.getId(), userDetails.getUsername(),
+		// userDetails.getEmail(), roles));
+
+		String refreshTokenValue;
+
+		if (existingRefreshToken.isPresent()) {
+			refreshTokenValue = existingRefreshToken.get().getToken();
+		} else {
+			// Generate and save a new refresh token
+			RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
+			// RefreshToken newRefreshToken =
+			// refreshTokenService.createRefreshToken(userDetails.getId());
+
+			// refreshTokenRepository.save(newRefreshToken);
+
+			refreshTokenValue = newRefreshToken.getToken();
+		}
+
+		// return new AuthenticationResponseDto(accessToken,
+		// refreshTokenValue.getToken());
 
 		return new GenericResponse<JwtResponse>(HttpStatus.OK.value(), "Login successful", new JwtResponse(jwt,
-				refreshToken.getToken(), userDetails.getId(), userDetails.getUsername(), userDetails.getEmail(), roles));
+				refreshTokenValue, userDetails.getId(), userDetails.getUsername(), userDetails.getEmail(), roles));
 
 	}
 
@@ -178,5 +213,15 @@ public class AuthController {
 			return new GenericResponse<>(HttpStatus.OK.value(), "Refresh token generated",
 					new TokenRefreshResponse(token, requestRefreshToken));
 		}).orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Refresh token is not in database!"));
+	}
+
+	@PostMapping("/logout")
+	public GenericResponse<String> logoutUser(@RequestBody RefreshToken refreshToken) {
+
+		// return new GenericResponse<>(HttpStatus.OK.value(), "Refresh token deleted")
+
+		refreshTokenService.revokeRefreshToken(refreshToken.getToken());
+
+		return new GenericResponse<String>(HttpStatus.OK.value(), "User logged out successfully", null);
 	}
 }
