@@ -19,6 +19,19 @@ public class SocialLinkServiceImpl implements SocialLinkService {
 	}
 
 	@Override
+	public void createSocialLink(SocialLink socialLink) {
+		// socialLinkRepo.save(socialLink);
+		Long platformId = socialLink.getSocialPlatform() != null ? socialLink.getSocialPlatform().getId() : null;
+
+		if (platformId == null) {
+			throw new RuntimeException("SocialPlatform ID is required");
+		}
+
+		// No need to fetch full entity; JPA will link via id
+		socialLinkRepo.save(socialLink);
+	}
+
+	@Override
 	public List<SocialLink> getSocialLinks() {
 		// TODO Auto-generated method stub
 		return socialLinkRepo.findAll();
